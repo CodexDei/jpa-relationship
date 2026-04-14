@@ -1,8 +1,8 @@
 package com.codexdei.springboot.jpa.relationship;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -12,8 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.codexdei.springboot.jpa.relationship.entities.Address;
 import com.codexdei.springboot.jpa.relationship.entities.Client;
+import com.codexdei.springboot.jpa.relationship.entities.ClientDetails;
 import com.codexdei.springboot.jpa.relationship.entities.Invoice;
 import com.codexdei.springboot.jpa.relationship.repositories.InvoiceRepository;
+import com.codexdei.springboot.jpa.relationship.repositories.ClientDetailsRepository;
 import com.codexdei.springboot.jpa.relationship.repositories.ClientRepository;
 
 @SpringBootApplication
@@ -24,6 +26,9 @@ public class RelationshipApplication implements CommandLineRunner {
 
 	@Autowired
 	private InvoiceRepository invoiceRepository;
+
+	@Autowired
+	private ClientDetailsRepository clientDetailsRepository;
 
 	public static void main(String[] args) {
 		SpringApplication.run(RelationshipApplication.class, args);
@@ -36,9 +41,174 @@ public class RelationshipApplication implements CommandLineRunner {
 		 * manyToOne();
 		 * manyToOneFindByIdClient();
 		 * OneToMany();
-		removeAddressFindById();
-		*/
-		OneToManyBidirectional();
+		 * removeAddressFindById();
+		 * OneToManyBidirectional();
+		 * OneToManyBidirectionalFindById();
+		 * removeBidirectionalFindById();
+		 * removeBidirectional();
+		 * OneToOne();
+		 */
+		OneToOneFindById();
+	}
+
+	@Transactional
+	public void OneToOneFindById() {
+
+		Long id = 1L;
+		ClientDetails clientDetails = new ClientDetails(true, 5000);
+		clientDetailsRepository.save(clientDetails);
+
+		Optional<Client> clientOptional = clientRepository.findOne(id);
+
+		clientOptional.ifPresentOrElse(client -> {
+
+			client.setClientDetails(clientDetails);
+			clientRepository.save(client);
+
+			System.out.println(client);
+
+		}, () -> System.out.println("Client with ID '" + id + "' not found"));
+	}
+
+	@Transactional
+	public void OneToOne() {
+
+		ClientDetails clientDetails = new ClientDetails(true, 5000);
+		clientDetailsRepository.save(clientDetails);
+
+		Client client = new Client("Sara", "Carden");
+		client.setClientDetails(clientDetails);
+		clientRepository.save(client);
+
+		System.out.println(client);
+	}
+
+	@Transactional
+	public void removeBidirectional() {
+
+		Long id = 3L;
+
+		Client client = new Client("Wilmer", "Fariet");
+
+		Optional<Client> clientOPtional = Optional.of(client);
+
+		clientOPtional.ifPresentOrElse(c -> {
+
+			Invoice invoice1 = new Invoice("invoice Iphone 17 pro", 1000L);
+			Invoice invoice2 = new Invoice("invoice Samsung S26 Ultra", 899L);
+			Invoice invoice3 = new Invoice("invoice Lenovo IdeaPad 2026", 6000L);
+			Invoice invoice4 = new Invoice("invoice PS5", 500L);
+			// una forma de agregar las facturas al cliente en una relacion oneToMany
+			// Bidirecccional, creando y usando el metodo 'addInvoice' */
+			c.addInvoice(invoice1).addInvoice(invoice2).addInvoice(invoice3).addInvoice(invoice4);
+
+			// guardando solo el cliente tambien se persiste(ó guarda) las facturas
+			// por el Cascade.ALL
+			clientRepository.save(c);
+
+			System.out.println(clientOPtional);
+
+		}, () -> System.out.println("¡¡¡¡¡¡¡ Client with ID: '" + id + "' not found in the Database !!!!!!!!")
+
+		);
+
+		Optional<Client> clientOPtionalDb = clientRepository.findOneWithInvoices(id);
+
+		clientOPtionalDb.ifPresentOrElse(c -> {
+
+			Optional<Invoice> invoiceOptional = invoiceRepository.findById(3L);
+
+			invoiceOptional.ifPresentOrElse(invoice -> {
+
+				// se creo el metodo removeInvoce para optimizar este metodo
+				c.removeInvoice(invoice);
+				clientRepository.save(c);
+				System.out.println(c);
+
+			}, () -> System.out.println("¡¡¡¡¡¡¡ Invoice with ID: '" + id + "' not found in the Database !!!!!!!!")
+
+			);
+
+		}, () -> System.out.println("¡¡¡¡¡¡¡ Client with ID: '" + id + "' not found in the Database !!!!!!!!"));
+	}
+
+	@Transactional
+	public void removeBidirectionalFindById() {
+
+		Long id = 1L;
+
+		Optional<Client> clientOPtional = clientRepository.findOneWithInvoices(id);
+
+		clientOPtional.ifPresentOrElse(client -> {
+
+			Invoice invoice1 = new Invoice("invoice Iphone 17 pro", 1000L);
+			Invoice invoice2 = new Invoice("invoice Samsung S26 Ultra", 899L);
+			Invoice invoice3 = new Invoice("invoice Lenovo IdeaPad 2026", 6000L);
+			Invoice invoice4 = new Invoice("invoice PS5", 500L);
+			// una forma de agregar las facturas al cliente en una relacion oneToMany
+			// Bidirecccional, creando y usando el metodo 'addInvoice' */
+			client.addInvoice(invoice1).addInvoice(invoice2).addInvoice(invoice3).addInvoice(invoice4);
+
+			// guardando solo el cliente tambien se persiste(ó guarda) las facturas
+			// por el Cascade.ALL
+			clientRepository.save(client);
+
+			System.out.println(clientOPtional);
+
+		}, () -> System.out.println("¡¡¡¡¡¡¡ Client with ID: '" + id + "' not found in the Database !!!!!!!!")
+
+		);
+
+		Optional<Client> clientOPtionalDb = clientRepository.findOneWithInvoices(id);
+
+		clientOPtionalDb.ifPresentOrElse(client -> {
+
+			Optional<Invoice> invoiceOptional = invoiceRepository.findById(3L);
+
+			invoiceOptional.ifPresentOrElse(invoice -> {
+
+				// se creo el metodo removeInvoce para optimizar este metodo
+				client.removeInvoice(invoice);
+				clientRepository.save(client);
+				System.out.println(client);
+
+			}, () -> System.out.println("¡¡¡¡¡¡¡ Invoice with ID: '" + id + "' not found in the Database !!!!!!!!")
+
+			);
+
+		}, () -> System.out.println("¡¡¡¡¡¡¡ Client with ID: '" + id + "' not found in the Database !!!!!!!!"));
+	}
+
+	@Transactional
+	public void OneToManyBidirectionalFindById() {
+
+		Long id = 1L;
+
+		Optional<Client> clientOPtional = clientRepository.findOneWithInvoices(id);
+
+		System.out.println("cuando se busca: " + clientOPtional);
+
+		clientOPtional.ifPresentOrElse(client -> {
+
+			Invoice invoice1 = new Invoice("invoice Iphone 17 pro", 1000L);
+			Invoice invoice2 = new Invoice("invoice Samsung S26 Ultra", 899L);
+			Invoice invoice3 = new Invoice("invoice Lenovo IdeaPad 2026", 6000L);
+			Invoice invoice4 = new Invoice("invoice PS5", 500L);
+			// una forma de agregar las facturas al cliente en una relacion oneToMany
+			// Bidirecccional, creando y usando el metodo 'addInvoice' */
+			client.addInvoice(invoice1).addInvoice(invoice2).addInvoice(invoice3).addInvoice(invoice4);
+
+			System.out.println("Antes de guardarlo: " + clientOPtional.get());
+
+			// guardando solo el cliente tambien se persiste(ó guarda) las facturas
+			// por el Cascade.ALL
+			clientRepository.save(client);
+
+			System.out.println(clientOPtional);
+
+		}, () -> System.out.println("¡¡¡¡¡¡¡ Client with ID: '" + id + "' not found in the Database !!!!!!!!")
+
+		);
 	}
 
 	@Transactional
@@ -48,14 +218,24 @@ public class RelationshipApplication implements CommandLineRunner {
 
 		Invoice invoice1 = new Invoice("invoice Iphone 17 pro", 1000L);
 		Invoice invoice2 = new Invoice("invoice Samsung S26 Ultra", 899L);
+		Invoice invoice3 = new Invoice("invoice Lenovo IdeaPad 2026", 6000L);
+		Invoice invoice4 = new Invoice("invoice PS5", 500L);
 
-		client.setInvoices(Arrays.asList(invoice1,invoice2));
+		// una forma de agregar las facturas al cliente en una relacion oneToMany
+		// Bidirecccional
+		/*
+		 * client.setInvoices(Arrays.asList(invoice1, invoice2));
+		 * invoice1.setClient(client);
+		 * invoice2.setClient(client);
+		 * invoice3.setClient(client);
+		 * invoice4.setClient(client);
+		 * // una forma de agregar las facturas al cliente en una relacion oneToMany
+		 * // Bidirecccional, creando y usando el metodo 'addInvoice'
+		 */
+		client.addInvoice(invoice1).addInvoice(invoice2).addInvoice(invoice3).addInvoice(invoice4);
 
-		invoice1.setClient(client);
-		invoice2.setClient(client);
-
-		//guardando solo el cliente tambien se persiste(ó guarda) las facturas
-		//por el Cascade.ALL
+		// guardando solo el cliente tambien se persiste(ó guarda) las facturas
+		// por el Cascade.ALL
 		clientRepository.save(client);
 
 		System.out.println(client);
@@ -73,16 +253,19 @@ public class RelationshipApplication implements CommandLineRunner {
 
 		optionalClient.ifPresentOrElse(client -> {
 
-			client.setAddresses(Arrays.asList(address1, address2));
+			Set adressSet = new HashSet<>();
+			adressSet.add(address1);
+			adressSet.add(address2);
+			client.setAddresses((adressSet));
 
 			clientRepository.save(client);
 
 			System.out.println(client);
 
-			Optional<Client> optionalClient2 = clientRepository.findOne(id);
+			Optional<Client> optionalClient2 = clientRepository.findOneWithAddresses(id);
 			optionalClient2.ifPresentOrElse(c -> {
 
-				Address addressRemove = c.getAddresses().get(1);
+				Address addressRemove = (Address) c.getAddresses();
 				System.out.println("Adress Remove: " + addressRemove);
 
 				c.getAddresses().remove(addressRemove);
@@ -116,7 +299,7 @@ public class RelationshipApplication implements CommandLineRunner {
 
 		System.out.println(clientPersist);
 
-		Optional<Client> optionalClient = clientRepository.findOne(3L);
+		Optional<Client> optionalClient = clientRepository.findOneWithAddresses(3L);
 		optionalClient.ifPresent(c -> {
 
 			c.getAddresses().remove(address1);
@@ -140,7 +323,10 @@ public class RelationshipApplication implements CommandLineRunner {
 
 		optionalClient.ifPresentOrElse(client -> {
 
-			client.setAddresses(Arrays.asList(address1, address2));
+			Set adressSet = new HashSet<>();
+			adressSet.add(address1);
+			adressSet.add(address2);
+			client.setAddresses(adressSet);
 
 			clientRepository.save(client);
 
