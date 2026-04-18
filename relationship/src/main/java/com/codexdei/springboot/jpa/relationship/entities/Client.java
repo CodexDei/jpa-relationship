@@ -5,6 +5,7 @@ import java.util.Set;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,7 +27,7 @@ public class Client {
     private String name;
     private String lastname;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true, mappedBy = "client")
     private ClientDetails clientDetails;
 
     // orphanRemoval=cuando es true hace que cuando eliminemos una direccion de la
@@ -104,6 +105,11 @@ public class Client {
         this.clientDetails = clientDetails;
     }
 
+    public void removeClientDetails(ClientDetails clientDetails) {
+        clientDetails.setClient(null);
+        this.clientDetails = null;
+    }
+
     public Client addInvoice(Invoice invoice) {
 
         invoices.add(invoice);
@@ -127,9 +133,9 @@ public class Client {
                 ", name=" + name +
                 ", lastname=" + lastname +
                 ", invoices=" + invoices +
-                 ", addresses=" + addresses +
-                 ", clientDetails=" + clientDetails +
-                 "}";
+                ", addresses=" + addresses +
+                ", clientDetails=" + clientDetails +
+                "}";
     }
 
 }
